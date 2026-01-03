@@ -1,0 +1,6 @@
+@DocuMind_HostAddress = http://localhost:5116
+
+GET {{DocuMind_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
