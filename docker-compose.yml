@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: documind-postgres
+    environment:
+      POSTGRES_DB: documind
+      POSTGRES_USER: documind
+      POSTGRES_PASSWORD: documind
+    ports:
+      - "5432:5432"
+    volumes:
+      - documind_db:/var/lib/postgresql/data
+
+volumes:
+  documind_db:
