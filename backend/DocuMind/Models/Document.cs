@@ -19,4 +19,8 @@ public class Document
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? ProcessedAt { get; set; }
+  
+    public string? ErrorMessage { get; set; }
+
 }

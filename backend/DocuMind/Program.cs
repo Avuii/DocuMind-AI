@@ -1,11 +1,17 @@
 ﻿using DocuMind.Data;
 using Microsoft.EntityFrameworkCore;
+using DocuMind.Services;
+using DocuMind.Services.BackgroundServices;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
+builder.Services.AddHostedService<DocumentProcessingWorker>();
+
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
 if (string.IsNullOrWhiteSpace(connectionString))
