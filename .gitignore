@@ -7,3 +7,7 @@ obj/
 *.suo
 *.userosscache
 *.sln.docstates
+
+storage/*
+!storage/.gitkeep
+
