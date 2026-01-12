@@ -107,7 +107,7 @@ Database: PostgreSQL (dev)
 Containers: Docker Compose  
 
 ---
-###🧑‍💻 Author
+### 🧑‍💻 Author
 
 Created by Avuii
 
