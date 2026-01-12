@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using DocuMind.Services;
 using DocuMind.Services.BackgroundServices;
+using DocuMind.Services.Storage;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
 builder.Services.AddHostedService<DocumentProcessingWorker>();
+builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+
 
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
