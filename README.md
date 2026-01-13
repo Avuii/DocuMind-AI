@@ -8,6 +8,7 @@ Full-stack project for **extracting key business fields** from **invoices and re
 📝 **Correction:** inline editing + saved as `corrected_result`
 
 ---
+---
 
 ## 🎯 Goal
 Build an end-to-end system that:
