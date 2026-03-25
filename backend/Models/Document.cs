@@ -13,7 +13,7 @@ public class Document
     public string ContentType { get; set; } = default!;
 
     [Required, MaxLength(500)]
-    public string StoragePath { get; set; } = default!;   // np. "storage/{id}/plik.pdf"
+    public string StoragePath { get; set; } = default!;
 
     public long SizeBytes { get; set; }
 
@@ -24,5 +24,6 @@ public class Document
     public DateTimeOffset? ProcessedAt { get; set; }
 
     public string? ErrorMessage { get; set; }
-}
 
+    public DocumentResult? Result { get; set; }
+}
