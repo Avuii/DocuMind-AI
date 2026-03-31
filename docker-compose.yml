@@ -11,5 +11,29 @@ services:
     volumes:
       - documind_db:/var/lib/postgresql/data
 
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: documind-ml-service
+    ports:
+      - "8001:8001"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: documind-backend
+    depends_on:
+      - db
+      - ml-service
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Host=db;Port=5432;Database=documind;Username=documind;Password=documind
+      MlService__BaseUrl: http://ml-service:8001
+    volumes:
+      - ./backend/storage:/app/storage
+
 volumes:
   documind_db:

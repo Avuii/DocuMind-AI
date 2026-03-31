@@ -8,69 +8,74 @@ namespace DocuMind.Services;
 public class DocumentProcessingService : IDocumentProcessingService
 {
     private readonly AppDbContext _db;
+    private readonly IMlInferenceClient _mlInferenceClient;
     private readonly ILogger<DocumentProcessingService> _logger;
 
-    public DocumentProcessingService(AppDbContext db, ILogger<DocumentProcessingService> logger)
+    public DocumentProcessingService(
+        AppDbContext db,
+        IMlInferenceClient mlInferenceClient,
+        ILogger<DocumentProcessingService> logger)
     {
         _db = db;
+        _mlInferenceClient = mlInferenceClient;
         _logger = logger;
     }
 
     public async Task ProcessAsync(Document document, CancellationToken ct)
     {
-        _logger.LogInformation("Processing doc {Id} (stub inference)", document.Id);
+        _logger.LogInformation("Processing doc {Id} with ML OCR", document.Id);
 
-        await Task.Delay(1500, ct);
+        var absolutePath = Path.Combine(
+            AppContext.BaseDirectory,
+            document.StoragePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
 
-        var now = DateTimeOffset.UtcNow;
+        if (!File.Exists(absolutePath))
+            throw new FileNotFoundException($"Stored document not found: {absolutePath}");
 
-        var rawResult = new
-        {
-            fields = new
-            {
-                vendor_name = new { value = "Sklep Testowy Sp. z o.o.", confidence = 0.82m },
-                invoice_date = new { value = "2026-03-23", confidence = 0.77m },
-                total_amount = new { value = 123.45m, confidence = 0.91m },
-                currency = new { value = "PLN", confidence = 0.88m },
-                tax_amount = new { value = 23.45m, confidence = 0.69m }
-            },
-            model_version = "stub-v0"
-        };
+        await using var fileStream = File.OpenRead(absolutePath);
+
+        var (parsed, rawJson) = await _mlInferenceClient.InferAsync(
+            document.OriginalFileName,
+            document.ContentType,
+            fileStream,
+            ct);
+
+        var confidenceValues = parsed.Fields.Values
+            .Select(x => (double)x.Confidence)
+            .ToList();
 
         var confidenceSummary = new
         {
-            average = 0.81m,
-            min = 0.69m,
-            max = 0.91m
+            average = confidenceValues.Count == 0 ? 0 : Math.Round(confidenceValues.Average(), 2),
+            min = confidenceValues.Count == 0 ? 0 : Math.Round(confidenceValues.Min(), 2),
+            max = confidenceValues.Count == 0 ? 0 : Math.Round(confidenceValues.Max(), 2)
         };
 
-        var rawResultJson = JsonSerializer.Serialize(rawResult);
+        var now = DateTimeOffset.UtcNow;
         var confidenceSummaryJson = JsonSerializer.Serialize(confidenceSummary);
 
         var existingResult = await _db.DocumentResults
             .FirstOrDefaultAsync(x => x.DocumentId == document.Id, ct);
 
-        if (existingResult is null)
+        if (existingResult == null)
         {
-            var result = new DocumentResult
+            _db.DocumentResults.Add(new DocumentResult
             {
                 DocumentId = document.Id,
-                RawResultJson = rawResultJson,
+                RawResultJson = rawJson,
                 CorrectedResultJson = null,
-                ModelVersion = "stub-v0",
+                ModelVersion = parsed.ModelVersion,
                 ConfidenceSummaryJson = confidenceSummaryJson,
                 CreatedAt = now,
                 UpdatedAt = now,
                 ProcessedAt = now
-            };
-
-            _db.DocumentResults.Add(result);
+            });
         }
         else
         {
-            existingResult.RawResultJson = rawResultJson;
+            existingResult.RawResultJson = rawJson;
             existingResult.CorrectedResultJson = null;
-            existingResult.ModelVersion = "stub-v0";
+            existingResult.ModelVersion = parsed.ModelVersion;
             existingResult.ConfidenceSummaryJson = confidenceSummaryJson;
             existingResult.UpdatedAt = now;
             existingResult.ProcessedAt = now;

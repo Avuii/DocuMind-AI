@@ -11,3 +11,5 @@ obj/
 storage/*
 !storage/.gitkeep
 
+datasets/*
+
