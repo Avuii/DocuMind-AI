@@ -1,7 +1,6 @@
 .vs/
 **/.vs/
 bin/
-
 obj/
 *.user
 *.suo
@@ -13,3 +12,27 @@ storage/*
 
 datasets/*
 
+node_modules/
+**/node_modules/
+
+dist/
+build/
+coverage/
+
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.vite/
+.DS_Store
+Thumbs.db
+
+__pycache__/
+*.pyc
+.venv/
+venv/
