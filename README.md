@@ -21,7 +21,7 @@ Build an end-to-end system that:
 
 ---
 
-## 🧩 What’s inside (Monorepo)
+## 🧩 What’s inside 
 
 ├─ backend/ ASP.NET Core Web API + background worker  
 ├─ frontend/ Angular UI (document list, details, corrections)  
