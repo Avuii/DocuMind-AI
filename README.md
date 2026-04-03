@@ -1,6 +1,7 @@
 # 🧾 DocuMind-AI — Invoice & Receipt Extraction (Document Intelligence)
 
-🚧 **Status: In Progress (MVP under active development)**  
+🚧 **Status: In Progress (under active development)**  
+
 Full-stack project for **extracting key business fields** from **invoices and receipts** (PDF/JPG/PNG), with a built-in **review & correction workflow** and **JSON/CSV export**.
 
 📌 **Scope (MVP):** `vendor_name`, `invoice_date`, `total_amount`, `currency`, `tax_amount`  
@@ -51,7 +52,7 @@ Build an end-to-end system that:
 - [x] Processing pipeline groundwork (worker/pipeline merged)
 - [ ] Results storage (`document_results`: raw/corrected JSON, model_version, confidence)
 - [ ] Analyze endpoint wiring (`POST /api/documents/{id}/analyze`)
-- [ ] Export endpoints (JSON/CSV)
+- [x] Export endpoints (JSON/CSV)
 
 ### Frontend (Angular)
 - [ ] Upload page (drag & drop + progress)
@@ -61,9 +62,9 @@ Build an end-to-end system that:
 - [ ] Export buttons (JSON/CSV)
 
 ### ML Service (FastAPI)
-- [ ] `/infer` stub (to unblock end-to-end demo)
-- [ ] OCR baseline (Polish diacritics support)
-- [ ] ML model integration (layout-aware document understanding)
+- [x] `/infer` stub (to unblock end-to-end demo)
+- [x] OCR baseline switched to paddle
+- [x] ML model integration (layout-aware document understanding)
 
 ---
 
