@@ -4,22 +4,21 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: '/DocuMind-AI/',
   plugins: [
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-
       '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
-  port: 4000,
-  proxy: {
-    "/api": "http://127.0.0.1:8000",
+    port: 4000,
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+    },
   },
-},
-
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })
