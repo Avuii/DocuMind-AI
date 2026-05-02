@@ -9,6 +9,14 @@ Full-stack project for **extracting key business fields** from **invoices and re
 📝 **Correction:** inline editing + saved as `corrected_result`
 
 ---
+## 🚀 Live Demo
+
+You can try the current frontend demo here:
+
+👉 **[Open DocuMind-AI Demo](https://avuii.github.io/DocuMind-AI/)**
+
+> Note: This is a frontend demo deployed with GitHub Pages.  
+> Some backend/ML features may be mocked or limited in the demo version.
 ---
 
 ## 🎯 Goal
