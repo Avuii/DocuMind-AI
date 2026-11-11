@@ -5,7 +5,7 @@ COPY DocuMind.csproj ./
 RUN dotnet restore
 
 COPY . ./
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish DocuMind.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app

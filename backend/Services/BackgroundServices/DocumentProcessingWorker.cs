@@ -26,9 +26,12 @@ public class DocumentProcessingWorker : BackgroundService
             {
                 await ProcessBatch(stoppingToken);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
             catch (Exception ex)
             {
-                // Żeby worker nie umarł przez jeden błąd
                 _logger.LogError(ex, "Worker loop crashed");
             }
 
@@ -42,43 +45,84 @@ public class DocumentProcessingWorker : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var processor = scope.ServiceProvider.GetRequiredService<IDocumentProcessingService>();
 
-        // Bierzemy kilka "Queued"
-        var docs = await db.Documents
+        // The inference client times out after two minutes. Recover claims left by a stopped worker.
+        var expired = DateTimeOffset.UtcNow.AddMinutes(-10);
+        await db.Documents
+            .Where(d => d.Status == DocumentStatus.Processing && d.UpdatedAt < expired)
+            .ExecuteUpdateAsync(update => update.SetProperty(d => d.Status, DocumentStatus.Queued), ct);
+
+        var ids = await db.Documents
             .Where(d => d.Status == DocumentStatus.Queued)
             .OrderBy(d => d.CreatedAt)
+            .Select(d => d.Id)
             .Take(3)
             .ToListAsync(ct);
 
-        foreach (var doc in docs)
+        foreach (var id in ids)
         {
+            var claimedAt = DateTimeOffset.UtcNow;
+            var claimed = await db.Documents
+                .Where(d => d.Id == id && d.Status == DocumentStatus.Queued)
+                .ExecuteUpdateAsync(update => update
+                    .SetProperty(d => d.Status, DocumentStatus.Processing)
+                    .SetProperty(d => d.UpdatedAt, claimedAt), ct);
+            if (claimed == 0)
+                continue;
+
+            var document = await db.Documents.AsNoTracking().SingleOrDefaultAsync(
+                d => d.Id == id && d.Status == DocumentStatus.Processing, ct);
+            if (document == null)
+                continue;
+
+            using var claim = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var monitor = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var watching = WatchClaim(id, document.UpdatedAt, claim, monitor.Token);
             try
             {
-                // Rezerwujemy + ustawiamy timestamp
-                doc.Status = DocumentStatus.Processing;
-                doc.UpdatedAt = DateTimeOffset.UtcNow;
-                await db.SaveChangesAsync(ct);
-
-                await processor.ProcessAsync(doc, ct);
-
-                // Jeśli serwis nie ustawił statusu, to ustawiamy domyślnie
-                if (doc.Status == DocumentStatus.Processing)
-                    doc.Status = DocumentStatus.Done;
-
-                doc.ProcessedAt ??= DateTimeOffset.UtcNow;
-                doc.UpdatedAt = DateTimeOffset.UtcNow;
-
-                await db.SaveChangesAsync(ct);
+                await processor.ProcessAsync(document, claim.Token);
             }
-            catch (Exception ex)
+            catch (OperationCanceledException) when (claim.IsCancellationRequested) { }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
             {
-                _logger.LogError(ex, "Processing failed for {Id}", doc.Id);
-
-                doc.Status = DocumentStatus.Failed;
-                doc.ErrorMessage = ex.Message;
-                doc.UpdatedAt = DateTimeOffset.UtcNow;
-
-                await db.SaveChangesAsync(ct);
+                var message = ex.Message[..Math.Min(ex.Message.Length, 2000)];
+                var failed = await db.Documents.Where(d => d.Id == id && d.Status == DocumentStatus.Processing &&
+                    d.UpdatedAt == document.UpdatedAt)
+                    .ExecuteUpdateAsync(update => update
+                        .SetProperty(d => d.Status, DocumentStatus.Failed)
+                        .SetProperty(d => d.ErrorMessage, message)
+                        .SetProperty(d => d.UpdatedAt, DateTimeOffset.UtcNow), ct);
+                if (failed > 0)
+                    _logger.LogError(ex, "Processing failed for {Id}", id);
             }
+            finally
+            {
+                await monitor.CancelAsync();
+                await watching;
+                db.ChangeTracker.Clear();
+            }
+        }
+    }
+
+    private async Task WatchClaim(Guid id, DateTimeOffset claimedAt, CancellationTokenSource claim, CancellationToken ct)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                if (await db.Documents.AnyAsync(d => d.Id == id && d.Status == DocumentStatus.Processing &&
+                    d.UpdatedAt == claimedAt, ct))
+                    continue;
+                await claim.CancelAsync();
+                break;
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not monitor extraction claim for {Id}", id);
         }
     }
 }

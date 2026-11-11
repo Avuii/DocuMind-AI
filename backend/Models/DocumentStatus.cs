@@ -5,5 +5,6 @@ public enum DocumentStatus
     Queued = 0,
     Processing = 1,
     Done = 2,
-    Failed = 3
+    Failed = 3,
+    Cancelled = 4
 }

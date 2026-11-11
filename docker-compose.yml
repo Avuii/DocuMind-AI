@@ -7,33 +7,52 @@ services:
       POSTGRES_USER: documind
       POSTGRES_PASSWORD: documind
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - documind_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documind -d documind"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   ml-service:
     build:
       context: ./ml-service
     container_name: documind-ml-service
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8001/health', timeout=2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 3m
 
   backend:
     build:
       context: ./backend
     container_name: documind-backend
     depends_on:
-      - db
-      - ml-service
+      db:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
     ports:
-      - "5000:8080"
+      - "127.0.0.1:5000:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: Host=db;Port=5432;Database=documind;Username=documind;Password=documind
       MlService__BaseUrl: http://ml-service:8001
+      Database__ApplyMigrations: "true"
+      DataProtection__KeyPath: /app/keys
+      Registries__GusKey: ${DOCUMIND_GUS_KEY:-}
+      Registries__CeidgToken: ${DOCUMIND_CEIDG_TOKEN:-}
     volumes:
       - ./backend/storage:/app/storage
+      - documind_keys:/app/keys
 
 volumes:
   documind_db:
+  documind_keys:

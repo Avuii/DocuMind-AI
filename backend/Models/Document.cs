@@ -25,5 +25,11 @@ public class Document
 
     public string? ErrorMessage { get; set; }
 
+    public string[] Tags { get; set; } = [];
+    public bool Reviewed { get; set; }
+    public string? OwnerId { get; set; }
+    public Guid? GroupId { get; set; }
+    public Guid? UploadBatchId { get; set; }
+
     public DocumentResult? Result { get; set; }
 }

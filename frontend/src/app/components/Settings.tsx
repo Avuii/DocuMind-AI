@@ -1,332 +1,194 @@
-import { Settings as SettingsIcon, User, Bell, Lock, Database, Zap } from "lucide-react";
-import { Card } from "./ui/card";
+import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router";
+import { ApiError, sendJson } from "../data/documents";
+import { canChooseExportFolder, chooseExportFolder, clearExportFolder, getExportFolder } from "../data/exportFolder";
+import { useI18n } from "../data/preferences";
+import type { Language } from "../data/preferences";
+import type { Account } from "./AccountForm";
+import { meetsPasswordRequirements, PasswordField } from "./PasswordField";
+import type { AccountContext } from "./RootLayout";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Switch } from "./ui/switch";
-import { Label } from "./ui/label";
-import { Separator } from "./ui/separator";
+import { Card } from "./ui/card";
+import { demoMode } from "../demo/mode";
 
 export function Settings() {
+  const { account, onSignedOut, onAccountChanged } = useOutletContext<AccountContext>();
+  const { language, t } = useI18n();
+  const [choice, setChoice] = useState<Language>(language);
+  const [folder, setFolder] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [passwordVersion, setPasswordVersion] = useState(0);
+
+  useEffect(() => {
+    if (!canChooseExportFolder) return;
+    let active = true;
+    getExportFolder(account.email).then((value) => {
+      if (active) setFolder(value?.name);
+    }).catch(() => {
+      if (active) setFeedback("Could not save to the export folder.");
+    });
+    return () => { active = false; };
+  }, [account.email]);
+
+  async function run(action: () => Promise<string | undefined>) {
+    setBusy(true);
+    setFeedback("");
+    try {
+      setFeedback(await action() ?? "");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) onSignedOut();
+      else if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setFeedback(error instanceof Error ? error.message : String(error));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="max-w-[1200px] mx-auto px-8 py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-semibold text-slate-900 mb-2 tracking-tight">
-          Settings
-        </h1>
-        <p className="text-lg text-slate-600">
-          Manage your account and application preferences
-        </p>
+    <div className="max-w-5xl mx-auto px-6 py-12 space-y-6">
+      <h1 className="text-4xl font-semibold">{t("Settings")}</h1>
+      <div className="grid gap-5 md:grid-cols-2 items-start">
+        <Card className="bg-white p-6 gap-4">
+          <h2 className="text-xl font-semibold">{t("Local account")}</h2>
+          <p className="break-all">{account.email}</p>
+          <p className="text-sm text-slate-600">{t("Your account, documents, and results are stored on this device.")}</p>
+          <label className="space-y-2">
+            <span className="block font-medium">{t("Application language")}</span>
+            <select className="w-full border rounded-lg px-3 py-2 bg-white"
+              value={choice} disabled={busy} onChange={(event) => setChoice(event.target.value as Language)}>
+              <option value="en">English</option>
+              <option value="pl">Polski</option>
+            </select>
+          </label>
+          <Button className="self-start" variant="outline" disabled={busy} onClick={() => void run(async () => {
+            onAccountChanged(await sendJson<Account>("/api/auth/language", "PUT", { language: choice }));
+            return "Language saved.";
+          })}>{t("Save language")}</Button>
+        </Card>
+        {!demoMode && <><PasswordChange key={passwordVersion} busy={busy} save={(currentPassword, newPassword) => void run(async () => {
+          await sendJson("/api/auth/change-password", "POST", { currentPassword, newPassword });
+          setPasswordVersion((previous) => previous + 1);
+          return "Password changed.";
+        })} />
+        <RecoveryCode /></>}
+        <Card className="bg-white p-6 gap-4">
+          <h2 className="text-xl font-semibold">{t("Export folder")}</h2>
+          <p>{folder ?? t("Browser downloads")}</p>
+          {canChooseExportFolder ? (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" disabled={busy} onClick={() => void run(async () => {
+                setFolder(await chooseExportFolder(account.email));
+                return undefined;
+              })}>{t("Choose folder")}</Button>
+              {folder && <Button variant="ghost" disabled={busy} onClick={() => void run(async () => {
+                await clearExportFolder(account.email);
+                setFolder(undefined);
+                return undefined;
+              })}>{t("Use browser downloads")}</Button>}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600">{t("Folder selection is unavailable in this browser. Exports use browser downloads.")}</p>
+          )}
+        </Card>
+        {demoMode ? <Card className="bg-white p-6 gap-4">
+          <h2 className="text-xl font-semibold">{t("Demo workspace")}</h2>
+          <p className="text-sm text-slate-600">{t("Account and password management are available in the full application.")}</p>
+          <Button variant="outline" className="self-start" disabled={busy} onClick={() => {
+            if (!window.confirm(t("Reset the demo and remove your local changes?"))) return;
+            void run(async () => {
+              await sendJson("/api/demo/reset", "POST", {});
+              sessionStorage.removeItem("documind:last-upload:" + account.email.toLowerCase());
+              localStorage.removeItem("documind.demo.language");
+              await clearExportFolder(account.email).catch(() => undefined);
+              window.location.reload();
+              return undefined;
+            });
+          }}>{t("Reset demo")}</Button>
+        </Card> : <Card className="bg-white p-6 gap-4">
+          <h2 className="text-xl font-semibold">{t("Access")}</h2>
+          <p className="text-sm text-slate-600">{t("Only your account can open your documents.")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={busy} onClick={() => void run(async () => {
+              await sendJson("/api/auth/revoke-other-sessions", "POST", {});
+              return "Other sessions will be signed out within a minute.";
+            })}>{t("Sign out other sessions")}</Button>
+            <Button variant="outline" disabled={busy} onClick={() => void run(async () => {
+              await sendJson("/api/auth/logout", "POST", {});
+              onSignedOut();
+              return undefined;
+            })}>{t("Sign out")}</Button>
+          </div>
+        </Card>}
       </div>
-
-      <div className="space-y-6">
-        {/* Profile Settings */}
-        <Card className="p-8 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <User className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Profile Settings
-              </h2>
-              <p className="text-sm text-slate-600">
-                Update your personal information
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="firstName" className="text-slate-700 mb-2 block">
-                  First Name
-                </Label>
-                <Input
-                  id="firstName"
-                  defaultValue="John"
-                  className="bg-white border-slate-300 rounded-lg"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName" className="text-slate-700 mb-2 block">
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  defaultValue="Doe"
-                  className="bg-white border-slate-300 rounded-lg"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="text-slate-700 mb-2 block">
-                Email Address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                defaultValue="john.doe@company.com"
-                className="bg-white border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="company" className="text-slate-700 mb-2 block">
-                Company Name
-              </Label>
-              <Input
-                id="company"
-                defaultValue="Acme Corporation"
-                className="bg-white border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex justify-end">
-              <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl">
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card className="p-8 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Notifications
-              </h2>
-              <p className="text-sm text-slate-600">
-                Configure how you receive updates
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  Email Notifications
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Receive email alerts when documents are processed
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  Processing Complete
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Get notified when extraction is complete
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  Failed Extractions
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Alert me when a document fails to process
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  Weekly Summary
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Receive a weekly summary of processed documents
-                </p>
-              </div>
-              <Switch />
-            </div>
-          </div>
-        </Card>
-
-        {/* Processing Settings */}
-        <Card className="p-8 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-violet-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Processing
-              </h2>
-              <p className="text-sm text-slate-600">
-                Configure AI extraction behavior
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  Auto-process Uploads
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Automatically start extraction on upload
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-slate-900 font-medium">
-                  High Accuracy Mode
-                </Label>
-                <p className="text-sm text-slate-600 mt-1">
-                  Use enhanced AI models for better accuracy (slower)
-                </p>
-              </div>
-              <Switch />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div>
-              <Label className="text-slate-900 font-medium mb-2 block">
-                Confidence Threshold
-              </Label>
-              <p className="text-sm text-slate-600 mb-4">
-                Minimum confidence score to accept extracted values
-              </p>
-              <div className="flex items-center gap-4">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  defaultValue="85"
-                  className="w-24 bg-white border-slate-300 rounded-lg"
-                />
-                <span className="text-sm text-slate-600">%</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Security Settings */}
-        <Card className="p-8 border-slate-200 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-              <Lock className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Security
-              </h2>
-              <p className="text-sm text-slate-600">
-                Manage your password and security preferences
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="currentPassword" className="text-slate-700 mb-2 block">
-                Current Password
-              </Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                className="bg-white border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="newPassword" className="text-slate-700 mb-2 block">
-                New Password
-              </Label>
-              <Input
-                id="newPassword"
-                type="password"
-                className="bg-white border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="confirmPassword" className="text-slate-700 mb-2 block">
-                Confirm New Password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                className="bg-white border-slate-300 rounded-lg"
-              />
-            </div>
-
-            <Separator className="bg-slate-200" />
-
-            <div className="flex justify-end">
-              <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl">
-                Update Password
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Data Management */}
-        <Card className="p-8 border-red-200 bg-gradient-to-br from-red-50 to-white shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-              <Database className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Data Management
-              </h2>
-              <p className="text-sm text-slate-600">
-                Manage your stored documents and data
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start border-slate-300 hover:bg-white rounded-xl"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Download All Data
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Delete All Documents
-            </Button>
-          </div>
-        </Card>
-      </div>
+      {feedback && <p role="status" className="rounded-lg border bg-white p-4">{t(feedback)}</p>}
     </div>
+  );
+}
+
+function RecoveryCode() {
+  const { t } = useI18n();
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function generate() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await sendJson<{ code: string }>("/api/auth/recovery-code", "POST", { password });
+      setCode(result.code);
+      setPassword("");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="bg-white p-6 gap-4">
+      <h2 className="text-xl font-semibold">{t("Recovery code")}</h2>
+      <p className="text-sm text-slate-600">{t("Save a recovery code to reset your password on this device.")}</p>
+      {code ? (
+        <>
+          <code className="break-all rounded bg-slate-100 p-3 select-all">{code}</code>
+          <Button variant="outline" className="self-start" onClick={() => setCode("")}>{t("Hide recovery code")}</Button>
+        </>
+      ) : (
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); if (password) void generate(); }}>
+          <PasswordField id="recovery-current-password" label="Current password" value={password}
+            onChange={setPassword} autoComplete="current-password" disabled={busy} />
+          <Button variant="outline" disabled={busy || !password}>{t("Generate recovery code")}</Button>
+        </form>
+      )}
+      {error && <p role="alert" className="text-sm text-red-700">{t(error)}</p>}
+    </Card>
+  );
+}
+
+function PasswordChange({ busy, save }: { busy: boolean; save: (current: string, next: string) => void }) {
+  const { t } = useI18n();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const valid = current.length > 0 && meetsPasswordRequirements(next) && confirm === next;
+
+  return (
+    <Card className="bg-white p-6 gap-4">
+      <h2 className="text-xl font-semibold">{t("Change password")}</h2>
+      <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (valid) save(current, next); }}>
+        <PasswordField id="current-password" label="Current password" value={current}
+          onChange={setCurrent} autoComplete="current-password" disabled={busy} />
+        <PasswordField id="new-password" label="New password" value={next}
+          onChange={setNext} autoComplete="new-password" showRequirements disabled={busy} />
+        <PasswordField id="confirm-password" label="Confirm new password" value={confirm}
+          onChange={setConfirm} autoComplete="new-password" disabled={busy} />
+        {confirm && confirm !== next && <p className="text-sm text-red-700">{t("Passwords do not match.")}</p>}
+        <Button disabled={busy || !valid}>{t("Change password")}</Button>
+      </form>
+    </Card>
   );
 }

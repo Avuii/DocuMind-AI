@@ -1,0 +1,65 @@
+{
+  "document_type": "receipt",
+  "language": "pl",
+  "currency": "PLN",
+  "number": "PF/2026/10/0002",
+  "issue_date": "2026-10-11",
+  "sale_date": "2026-10-11",
+  "seller": {
+    "name": "Model 690 Sp. z o.o.",
+    "nip": "9990686980",
+    "address": "ul. Testowa 24, 00-000 Miasto"
+  },
+  "buyer": {
+    "nip": "9994762241"
+  },
+  "line_items": [
+    {
+      "description": "Wiertło do betonu",
+      "quantity": 6,
+      "vat_rate": 23,
+      "unit_gross": "25.31",
+      "net": "123.46",
+      "vat": "28.40",
+      "gross": "151.86",
+      "tax_code": "A"
+    },
+    {
+      "description": "Zaprawa murarska",
+      "quantity": 2,
+      "vat_rate": 23,
+      "unit_gross": "33.78",
+      "net": "54.93",
+      "vat": "12.63",
+      "gross": "67.56",
+      "tax_code": "A"
+    }
+  ],
+  "totals": {
+    "net": "178.39",
+    "vat": "41.03",
+    "gross": "219.42"
+  },
+  "text": [
+    "Model 690 Sp. z o.o.",
+    "ul. Testowa 24, 00-000 Miasto",
+    "NIP: 9990686980",
+    "PARAGON FISKALNY",
+    "Nr paragonu: PF/2026/10/0002",
+    "11.10.2026",
+    "Wiertło do betonu",
+    "6 x 25,31",
+    "151,86 A",
+    "Zaprawa murarska",
+    "2 x 33,78",
+    "67,56 A",
+    "Rozliczenie VAT",
+    "VAT 23%  41,03",
+    "SUMA PLN",
+    "219,42",
+    "Płatność kartą",
+    "Nabywca NIP: 9994762241",
+    "DOKUMENT SYNTETYCZNY"
+  ],
+  "sha256": "96998a11c72b905eab820d6bbdfd5f4988712fbe8491f3c4d7ea282b45d2f107"
+}

@@ -1,0 +1,82 @@
+{
+  "document_type": "invoice",
+  "language": "pl",
+  "currency": "PLN",
+  "number": "FV/2026/01/0003",
+  "issue_date": "2026-01-03",
+  "sale_date": "2026-01-03",
+  "due_date": "2026-01-17",
+  "seller": {
+    "name": "Szablon 229 Sp. z o.o.",
+    "nip": "9999406657",
+    "address": "ul. Testowa 11, 00-000 Miasto"
+  },
+  "buyer": {
+    "nip": "9997599497",
+    "name": "Próba 306 Sp. z o.o.",
+    "address": "ul. Przykładowa 78, 00-000 Miasto"
+  },
+  "line_items": [
+    {
+      "description": "Konfiguracja systemu",
+      "quantity": 3,
+      "vat_rate": 23,
+      "unit_net": "187.04",
+      "net": "561.12",
+      "vat": "129.06",
+      "gross": "690.18"
+    },
+    {
+      "description": "Kabel sieciowy",
+      "quantity": 7,
+      "vat_rate": 23,
+      "unit_net": "12.82",
+      "net": "89.74",
+      "vat": "20.64",
+      "gross": "110.38"
+    }
+  ],
+  "totals": {
+    "net": "650.86",
+    "vat": "149.70",
+    "gross": "800.56"
+  },
+  "text": [
+    "FAKTURA VAT",
+    "Nr FV/2026/01/0003",
+    "DOKUMENT SYNTETYCZNY",
+    "Sprzedawca",
+    "Pozycja",
+    "Ilość",
+    "Cena netto",
+    "VAT",
+    "Brutto",
+    "Szablon 229 Sp. z o.o.",
+    "ul. Testowa 11, 00-000 Miasto",
+    "Konfiguracja systemu",
+    "3",
+    "187,04",
+    "23%",
+    "690,18",
+    "NIP: 9999406657",
+    "Kabel sieciowy",
+    "7",
+    "12,82",
+    "23%",
+    "110,38",
+    "Nabywca",
+    "Próba 306 Sp. z o.o.",
+    "Rozliczenie VAT",
+    "ul. Przykładowa 78, 00-000 Miasto",
+    "NIP: 9997599497",
+    "23%   Netto: 650,86   VAT: 149,70",
+    "Data wystawienia: 03.01.2026",
+    "Netto: 650,86",
+    "Data sprzedaży: 03.01.2026",
+    "VAT: 149,70",
+    "Termin płatności: 17.01.2026",
+    "SUMA PLN: 800,56",
+    "KSeF – TEST"
+  ],
+  "sha256": "9ad4ebb4f7b239ec8fa1d27068d2823e76421e5d465881ffc1ff5e85f2331c1b"
+}
