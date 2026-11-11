@@ -1,0 +1,82 @@
+{
+  "document_type": "invoice",
+  "language": "en",
+  "currency": "PLN",
+  "number": "FV/2026/08/0002",
+  "issue_date": "2026-08-26",
+  "sale_date": "2026-08-26",
+  "due_date": "2026-09-09",
+  "seller": {
+    "name": "Makieta 560 Sp. z o.o.",
+    "nip": "9991305968",
+    "address": "ul. Testowa 14, 00-000 Miasto"
+  },
+  "buyer": {
+    "nip": "9990341962",
+    "name": "Próba 255 Sp. z o.o.",
+    "address": "ul. Przykładowa 10, 00-000 Miasto"
+  },
+  "line_items": [
+    {
+      "description": "Spirit level",
+      "quantity": 7,
+      "vat_rate": 23,
+      "unit_net": "46.49",
+      "net": "325.43",
+      "vat": "74.85",
+      "gross": "400.28"
+    },
+    {
+      "description": "Masonry mortar",
+      "quantity": 5,
+      "vat_rate": 23,
+      "unit_net": "28.29",
+      "net": "141.45",
+      "vat": "32.53",
+      "gross": "173.98"
+    }
+  ],
+  "totals": {
+    "net": "466.88",
+    "vat": "107.38",
+    "gross": "574.26"
+  },
+  "text": [
+    "VAT INVOICE",
+    "No. FV/2026/08/0002",
+    "SYNTHETIC DOCUMENT",
+    "Seller",
+    "Buyer",
+    "Makieta 560 Sp. z o.o.",
+    "Próba 255 Sp. z o.o.",
+    "ul. Testowa 14, 00-000 Miasto",
+    "ul. Przykładowa 10, 00-000 Miasto",
+    "NIP: 9991305968",
+    "NIP: 9990341962",
+    "Issue date: 26.08.2026",
+    "Sale date: 26.08.2026",
+    "Due date: 09.09.2026",
+    "Item",
+    "Qty",
+    "Unit net",
+    "VAT",
+    "Gross",
+    "Spirit level",
+    "7",
+    "46.49",
+    "23%",
+    "400.28",
+    "Masonry mortar",
+    "5",
+    "28.29",
+    "23%",
+    "173.98",
+    "VAT breakdown",
+    "23%   Net: 466.88   VAT: 107.38",
+    "Net: 466.88",
+    "VAT: 107.38",
+    "TOTAL PLN: 574.26",
+    "KSeF – TEST"
+  ],
+  "sha256": "88a3325756a0bde7f00405f56f7d38d244f040e7d2a19b151500c313f072701f"
+}

@@ -1,4 +1,5 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, createHashRouter } from "react-router";
+import { demoMode } from "./demo/mode";
 import { RootLayout } from "./components/RootLayout";
 import { Dashboard } from "./components/Dashboard";
 import { Documents } from "./components/Documents";
@@ -6,7 +7,7 @@ import { DocumentDetail } from "./components/DocumentDetail";
 import { Exports } from "./components/Exports";
 import { Settings } from "./components/Settings";
 
-export const router = createBrowserRouter([
+export const router = (demoMode ? createHashRouter : createBrowserRouter)([
   {
     path: "/",
     Component: RootLayout,

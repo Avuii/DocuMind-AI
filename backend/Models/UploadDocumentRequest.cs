@@ -6,4 +6,5 @@ public class UploadDocumentRequest
 {
     [FromForm(Name = "file")]
     public IFormFile File { get; set; } = default!;
+    public Guid? BatchId { get; set; }
 }

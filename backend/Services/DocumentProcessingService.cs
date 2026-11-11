@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using DocuMind.Data;
+using System.Diagnostics;
+using System.Text.Json.Nodes;
 using DocuMind.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,7 +25,9 @@ public class DocumentProcessingService : IDocumentProcessingService
 
     public async Task ProcessAsync(Document document, CancellationToken ct)
     {
-        _logger.LogInformation("Processing doc {Id} with ML OCR", document.Id);
+        using var activity = new Activity("documents.extract").Start();
+        activity.SetTag("document.id", document.Id);
+        _logger.LogInformation("Processing document {DocumentId} with trace {TraceId}", document.Id, activity.TraceId);
 
         var absolutePath = Path.Combine(
             AppContext.BaseDirectory,
@@ -32,7 +36,8 @@ public class DocumentProcessingService : IDocumentProcessingService
         if (!File.Exists(absolutePath))
             throw new FileNotFoundException($"Stored document not found: {absolutePath}");
 
-        await using var fileStream = File.OpenRead(absolutePath);
+        await using var fileStream = new FileStream(absolutePath, FileMode.Open, FileAccess.Read,
+            FileShare.Read | FileShare.Delete);
 
         var (parsed, rawJson) = await _mlInferenceClient.InferAsync(
             document.OriginalFileName,
@@ -54,6 +59,19 @@ public class DocumentProcessingService : IDocumentProcessingService
         var now = DateTimeOffset.UtcNow;
         var confidenceSummaryJson = JsonSerializer.Serialize(confidenceSummary);
 
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        // Only the worker that still holds this claim may publish a result.
+        var published = await _db.Documents
+            .Where(d => d.Id == document.Id && d.Status == DocumentStatus.Processing &&
+                d.UpdatedAt == document.UpdatedAt)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(d => d.Status, DocumentStatus.Done)
+                .SetProperty(d => d.ProcessedAt, now)
+                .SetProperty(d => d.UpdatedAt, now)
+                .SetProperty(d => d.ErrorMessage, (string?)null), ct);
+        if (published == 0)
+            return;
+
         var existingResult = await _db.DocumentResults
             .FirstOrDefaultAsync(x => x.DocumentId == document.Id, ct);
 
@@ -73,19 +91,36 @@ public class DocumentProcessingService : IDocumentProcessingService
         }
         else
         {
+            existingResult.CorrectedResultJson = ApplyCorrections(rawJson, existingResult.CorrectedResultJson);
             existingResult.RawResultJson = rawJson;
-            existingResult.CorrectedResultJson = null;
             existingResult.ModelVersion = parsed.ModelVersion;
             existingResult.ConfidenceSummaryJson = confidenceSummaryJson;
             existingResult.UpdatedAt = now;
             existingResult.ProcessedAt = now;
         }
 
-        document.Status = DocumentStatus.Done;
-        document.ProcessedAt = now;
-        document.UpdatedAt = now;
-        document.ErrorMessage = null;
-
         await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    private static string? ApplyCorrections(string rawJson, string? previousCorrections)
+    {
+        if (previousCorrections == null ||
+            JsonNode.Parse(previousCorrections)?["fields"] is not JsonObject previousFields ||
+            JsonNode.Parse(rawJson) is not JsonObject root || root["fields"] is not JsonObject fields)
+            return null;
+
+        foreach (var (key, oldValue) in previousFields)
+        {
+            if (oldValue is not JsonObject oldField || oldField["edited"]?.GetValue<bool>() != true)
+                continue;
+
+            var field = fields[key] as JsonObject ?? new JsonObject();
+            field["value"] = oldField["value"]?.DeepClone();
+            field["edited"] = true;
+            if (fields[key] == null)
+                fields[key] = field;
+        }
+        return root.ToJsonString();
     }
 }
