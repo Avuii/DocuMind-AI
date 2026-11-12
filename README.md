@@ -8,10 +8,17 @@
   <strong>Turn invoices and receipts into structured, reviewable data.</strong>
 </p>
 
+
 <p align="center">
-  <a href="https://avuii.github.io/DocuMind-AI/"><img src="https://img.shields.io/badge/Live%20Demo-Open-1555F5?style=for-the-badge&logo=githubpages&logoColor=white" alt="Open the DocuMind AI live demo" /></a>
-  <a href="https://github.com/Avuii/DocuMind-AI/actions/workflows/ci.yml"><img src="https://github.com/Avuii/DocuMind-AI/actions/workflows/ci.yml/badge.svg" alt="DocuMind CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT license" /></a>
+  <a href="https://avuii.github.io/DocuMind-AI/">
+    <img src="https://img.shields.io/badge/Live%20Demo-Open-1555F5?style=for-the-badge&logo=githubpages&logoColor=white" alt="Live Demo" />
+  </a>
+  <a href="https://github.com/Avuii/DocuMind-AI/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Avuii/DocuMind-AI/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License" />
+  </a>
   <br />
   <img src="https://img.shields.io/badge/React-149ECA?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -20,15 +27,29 @@
   <img src="https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
+
 ---
 
 ## Contents
 
-[Live demo](#live-demo) · [Interface preview](#interface-preview) · [Features](#features) · [Architecture](#architecture) · [Run locally](#run-locally) · [Testing and deployment](#testing-and-deployment) · [Synthetic dataset](#synthetic-dataset) · [Data and privacy](#data-and-privacy)
+* [Live demo](#live-demo)   
+* [Interface preview](#interface-preview)   
+* [Features](#features) 
+* [Architecture](#architecture)  
+* [Run locally](#run-locally)  
+* [Testing and deployment](#testing-and-deployment)  
+* [Synthetic dataset](#synthetic-dataset)  
+* [Data and privacy](#data-and-privacy)  
 
 ## Live demo
 
-**[Open DocuMind AI on GitHub Pages →](https://avuii.github.io/DocuMind-AI/)**
+
+<p align="center">
+  <a href="https://avuii.github.io/DocuMind-AI/">
+    <strong>Open DocuMind AI on GitHub Pages →</strong>
+  </a>
+</p>
+
 
 Open an example from **Documents**, or select **Process demo samples** on the dashboard to try the upload queue. Review fields alongside the original, ask a question with a source quote, assign a colored group, and export approved results to JSON or CSV.
 
@@ -121,6 +142,11 @@ The full app stores originals under `backend/storage/` and results in PostgreSQL
 
 Extraction quality depends on image readability and document layout. Review values before export, particularly when a scan is faint, fields are missing, or currencies conflict.
 
+
 ## License
 
-[MIT](LICENSE) · Created by [Avuii](https://github.com/Avuii).
+[MIT](LICENSE) 
+
+
+## Author
+Created by [Avuii](https://github.com/Avuii).
