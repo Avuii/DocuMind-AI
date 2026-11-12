@@ -27,16 +27,15 @@ public class MlInferenceClient : IMlInferenceClient
         streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         form.Add(streamContent, "file", fileName);
 
-        _logger.LogInformation("Sending file {FileName} to ML service at {BaseUrl}", fileName, _httpClient.BaseAddress);
+        _logger.LogDebug("Sending document to the extraction service");
 
         using var response = await _httpClient.PostAsync("infer", form, ct);
-        var rawJson = await response.Content.ReadAsStringAsync(ct);
-
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException(
-                $"ML service returned {(int)response.StatusCode}: {rawJson}");
+                $"Extraction service returned HTTP {(int)response.StatusCode}.");
         }
+        var rawJson = await response.Content.ReadAsStringAsync(ct);
 
         var parsed = JsonSerializer.Deserialize<MlInferResponseDto>(rawJson, new JsonSerializerOptions
         {

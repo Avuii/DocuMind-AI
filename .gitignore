@@ -26,6 +26,7 @@ appsettings.*.local.json
 .codex/
 
 # Local document originals, datasets, exports and database state
+# Uploads are stored as extensionless files under backend/storage/<id>/original.
 /storage/
 /backend/storage/
 datasets/

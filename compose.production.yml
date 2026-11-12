@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: documind
+      POSTGRES_USER: documind
+      POSTGRES_PASSWORD: ${DOCUMIND_DATABASE_PASSWORD:?Set DOCUMIND_DATABASE_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U documind -d documind"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [private]
+
+  ml-service:
+    build: ./ml-service
+    restart: unless-stopped
+    environment:
+      PADDLE_PDX_CACHE_HOME: /models
+    volumes:
+      - models:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8001/health', timeout=2).close()"]
+      interval: 10s
+      timeout: 4s
+      retries: 12
+      start_period: 5m
+    # Outbound access allows first-start model downloads.
+    networks: [private, outbound]
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    user: app
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    stop_grace_period: 2m
+    depends_on:
+      db:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTPS_PORT: "443"
+      AllowedHosts: "${DOCUMIND_HOST:?Set DOCUMIND_HOST};localhost;127.0.0.1"
+      ConnectionStrings__Default: "Host=db;Database=documind;Username=documind;Password=${DOCUMIND_DATABASE_PASSWORD:?Set DOCUMIND_DATABASE_PASSWORD}"
+      MlService__BaseUrl: http://ml-service:8001
+      DataProtection__KeyPath: /app/keys
+      ReverseProxy__KnownProxy: ${DOCUMIND_PROXY_IP:-172.29.45.1}
+      Registries__GusKey: ${DOCUMIND_GUS_KEY:-}
+      Registries__CeidgToken: ${DOCUMIND_CEIDG_TOKEN:-}
+      Logging__LogLevel__System.Net.Http.HttpClient: Warning
+    volumes:
+      - documents:/app/storage
+      - session_keys:/app/keys
+    networks: [private, outbound]
+
+networks:
+  private:
+    internal: true
+  outbound:
+    ipam:
+      config:
+        - subnet: 172.29.45.0/24
+          gateway: 172.29.45.1
+
+volumes:
+  database:
+  documents:
+  session_keys:
+  models:

@@ -73,6 +73,9 @@ $tempPath = Join-Path ([IO.Path]::GetTempPath()) ("documind-" + [guid]::NewGuid(
 try {
     $anonymous = Invoke-WebRequest $documents -SkipHttpErrorCheck
     Assert-Condition ($anonymous.StatusCode -eq 401) 'Anonymous users can access document history.'
+    $lookup = "$BaseUrl/api/registries/lookup"
+    $anonymousLookup = Invoke-WebRequest $lookup -Method Post -Headers $headers -ContentType 'application/json' -Body '{"kind":"nip","number":"0000000000"}' -SkipHttpErrorCheck
+    Assert-Condition ($anonymousLookup.StatusCode -eq 401) 'Anonymous users can access registries.'
     $credentials = @{
         email = "smoke-$([guid]::NewGuid().ToString('N'))@example.test"
         password = 'Local-Smoke-Password!42'
@@ -93,6 +96,8 @@ try {
         'Invoke-RestMethod:Headers' = $headers
         'Invoke-WebRequest:Headers' = $headers
     }
+    $invalidLookup = Invoke-WebRequest $lookup -Method Post -ContentType 'application/json' -Body '{"kind":"nip","number":"0000000000"}' -SkipHttpErrorCheck
+    Assert-Condition ($invalidLookup.StatusCode -eq 400) 'Registry endpoint accepted a malformed NIP.'
 
     New-DocumentPdf $tempPath
     $initialBatch = [guid]::NewGuid().ToString()

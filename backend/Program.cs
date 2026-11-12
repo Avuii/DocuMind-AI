@@ -6,8 +6,26 @@ using DocuMind.Services.Registries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var trustedProxy = builder.Configuration["ReverseProxy:KnownProxy"];
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    if (!IPAddress.TryParse(trustedProxy, out var address))
+        throw new InvalidOperationException("ReverseProxy:KnownProxy must be an IP address.");
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+        options.KnownProxies.Add(address);
+    });
+}
 
 builder.Services.AddHttpClient<RegistryClient>(client =>
 {
@@ -83,14 +101,26 @@ builder.Services.AddHttpClient<IMlInferenceClient, MlInferenceClient>(client =>
     client.BaseAddress = new Uri(mlBaseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(120);
 });
+builder.Services.AddHttpClient("ocr-health", client =>
+{
+    client.BaseAddress = new Uri(mlBaseUrl.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(3);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 var app = builder.Build();
 
-if (app.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+    app.UseForwardedHeaders();
+
+var migrateOnly = app.Configuration.GetValue<bool>("Database:MigrateOnly");
+if (migrateOnly || app.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 }
+
+if (migrateOnly)
+    return;
 
 if (app.Environment.IsDevelopment())
 {
@@ -98,7 +128,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseWhen(context => !context.Request.Path.StartsWithSegments("/health"),
+    pipeline => pipeline.UseHttpsRedirection());
 app.Use(async (context, next) =>
 {
     var request = context.Request;
@@ -120,5 +151,27 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
     await db.Database.CanConnectAsync(ct) ? Results.Ok() : Results.StatusCode(503));
+app.MapGet("/health/live", () => Results.Ok());
+app.MapGet("/health/ready", async (AppDbContext db, IHttpClientFactory clients, CancellationToken ct) =>
+{
+    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    timeout.CancelAfter(TimeSpan.FromSeconds(4));
+    try
+    {
+        if (!await db.Database.CanConnectAsync(timeout.Token))
+            return Results.StatusCode(503);
+        using var client = clients.CreateClient("ocr-health");
+        using var response = await client.GetAsync("health", timeout.Token);
+        return response.IsSuccessStatusCode ? Results.Ok() : Results.StatusCode(503);
+    }
+    catch (HttpRequestException)
+    {
+        return Results.StatusCode(503);
+    }
+    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+    {
+        return Results.StatusCode(503);
+    }
+});
 app.MapControllers();
 app.Run();

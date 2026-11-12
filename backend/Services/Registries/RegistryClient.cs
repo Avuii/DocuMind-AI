@@ -38,7 +38,9 @@ public sealed partial class RegistryClient(HttpClient http, IConfiguration confi
                 > 1 => new("KRS", "ambiguous"),
                 _ => new("KRS", "notApplicable")
             };
-            if (krs.Company is { } company && id.Kind == "nip" && company.Nip != id.Number)
+            if (krs.Company is { } company &&
+                ((id.Kind == "nip" && company.Nip != id.Number) ||
+                 (id.Kind == "regon" && company.Regon != id.Number)))
                 krs = new("KRS", "ambiguous");
         }
         return [.. results, krs];
@@ -110,8 +112,10 @@ public sealed partial class RegistryClient(HttpClient http, IConfiguration confi
         if (response == null)
             return new("CEIDG", "notFound");
         var firms = response["firmy"] as JsonArray ?? throw new InvalidDataException();
-        if (firms.Count != 1 || (int?)response["count"] > 1)
-            return new("CEIDG", firms.Count == 0 ? "notFound" : "ambiguous");
+        if (firms.Count > 1 || (int?)response["count"] > 1)
+            return new("CEIDG", "ambiguous");
+        if (firms.Count == 0)
+            return new("CEIDG", "notFound");
         var entity = firms[0];
         var owner = entity?["wlasciciel"];
         var address = entity?["adresDzialalnosci"];

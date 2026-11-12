@@ -194,7 +194,7 @@ def extract_document(lines: list[dict]) -> dict:
     document_type = (
         "receipt" if explicit_receipt
         else "invoice" if invoice_number or re.search(
-            r"^\s*(?:faktura|(?:(?:simplified\s+tax|commercial|tax|pro\s*forma)\s+)?invoice|rechnung|facture)\b",
+            r"^\s*(?:faktura|(?:(?:simplified\s+tax|commercial|tax|vat|pro\s*forma)\s+)?invoice|rechnung|facture)\b",
             text, re.I | re.M)
         else "receipt" if re.search(r"\b(?:paragon|fiskalny|receipt|kassenbon|ticket de caisse)\b", text, re.I)
         or (re.search(r"^(?:cash|card|change|gotówka|karta|reszta)\b", text, re.I | re.M)
@@ -595,10 +595,10 @@ def extract_line_items(rows: list[dict], document_type: str) -> list[dict]:
 def extract_invoice_number(rows: list[dict]) -> str | None:
     identifier = r"[ .:#-]*((?=[A-Z0-9./-]*\d)[A-Z0-9][A-Z0-9./-]*)"
     labelled = re.compile(r"^(?:faktura(?:\s+VAT)?\s+(?:nr|numer)|(?:nr|numer)\s+faktury|"
-                          r"(?:tax\s+)?invoice\s*(?:no\.?|number|#)|inv\s*#)" + identifier, re.I)
-    short_label = re.compile(r"^no\.?\s*:" + identifier, re.I)
+                          r"(?:(?:tax|vat)\s+)?invoice\s*(?:no\.?|number|#)|inv\s*#)" + identifier, re.I)
+    short_label = re.compile(r"^(?:no|nr)(?:\.\s*:?|\s*:|\s+)" + identifier, re.I)
     separate_label = re.compile(r"^(?:faktura(?:\s+VAT)?\s+(?:nr|numer)|invoice\s+(?:no\.?|number))\s*[:#.]?$", re.I)
-    heading = re.compile(r"^(?:(?:tax|commercial)\s+)?invoice\b", re.I)
+    heading = re.compile(r"^(?:faktura(?:\s+vat)?|(?:(?:tax|vat|commercial)\s+)?invoice)\b", re.I)
     for index, row in enumerate(rows):
         for segment in summary_segments(row):
             match = labelled.match(segment)

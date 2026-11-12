@@ -1,5 +1,15 @@
 bin/
 obj/
 storage/
+keys/
+.env*
+secrets.json
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.local.json
+appsettings.*.local.json
+*.pfx
+*.pem
+*.key
 .vs/
 *.user

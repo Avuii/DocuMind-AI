@@ -36,13 +36,36 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Validate production Compose configuration
+        env:
+          DOCUMIND_HOST: documind.example.com
+          DOCUMIND_DATABASE_PASSWORD: compose-validation-only
+        run: docker compose -f compose.production.yml config --quiet
       - run: docker compose up --build --detach
       - name: Wait for the API
-        run: curl --fail --retry 30 --retry-delay 2 --retry-all-errors --max-time 5 http://127.0.0.1:5000/health
+        run: curl --fail --retry 30 --retry-delay 2 --retry-all-errors --max-time 5 http://127.0.0.1:5000/health/ready
       - name: Exercise upload, extraction and review
         shell: pwsh
         run: ./tests/document-api.ps1 -IncludeOcr
+      - name: Evaluate OCR by layout
+        run: python3 tests/ocr-eval.py --report test-results/ocr.json
+      - name: Store OCR metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-metrics
+          path: test-results/ocr.json
+          if-no-files-found: ignore
       - if: failure()
         run: docker compose logs --no-color
       - if: always()
         run: docker compose down --volumes
+
+  registry-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet run --project tests/RegistryIntegration --configuration Release

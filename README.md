@@ -51,6 +51,7 @@
 - [Getting Started](#getting-started)
 - [Configuration & API](#configuration--api)
 - [Testing & Security](#testing--security)
+- [Production Deployment](docs/production.md)
 - [Project Status & Roadmap](#project-status--roadmap)
 - [License](#license)
 - [Author](#author)
@@ -237,6 +238,24 @@ With Docker Compose running, execute the document API smoke tests from the repos
 ./tests/document-api.ps1 -IncludeOcr
 ```
 
+### OCR Evaluation
+
+With the OCR service running, compare extracted fields with synthetic ground truth across sidebar and framed invoices, a thermal receipt, a scanned PDF, and a two-page text PDF.
+
+```bash
+python tests/ocr-eval.py --report test-results/ocr.json
+```
+
+Use `--dataset datasets/Generated` to include generated documents and measure accuracy by field and layout. The report records matches and counts without copying document text. The bundled cases enforce regression checks on selected fields and page positions.
+
+### Registry Integration Tests
+
+```bash
+dotnet run --project tests/RegistryIntegration --configuration Release
+```
+
+The suite exercises the production registry client against simulated HTTP and SOAP responses, including missing credentials, conflicting identifiers, rate limits, malformed payloads, and cancellation. The API smoke test also checks endpoint authorization and identifier validation.
+
 ### Frontend Build Checks
 
 ```bash
@@ -250,9 +269,11 @@ npm run build:demo
 
 ### Continuous Integration & Deployment
 
-The [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests. It builds both frontend modes, rejects tracked files that violate `.gitignore`, and exercises upload, extraction, and review through the Docker-based API smoke test with OCR.
+The [CI workflow](.github/workflows/ci.yml) builds both frontend modes, rejects tracked files that violate `.gitignore`, and runs the API, OCR evaluation, and registry tests.
 
 The [GitHub Pages workflow](.github/workflows/deploy-frontend-pages.yml) builds and publishes the static demo from `main`. The repository must use **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+For the full application, follow the [production deployment guide](docs/production.md).
 
 ### Synthetic Test Data
 
@@ -278,7 +299,7 @@ The generator writes sample images and paired `ground_truth` JSON files to `data
 
 ## Project Status & Roadmap
 
-**Current status: Active development.** The interactive demo is deployed; the full stack is configured for local execution.
+**Current status: Active development.** The interactive demo runs on GitHub Pages. The full stack has local and single-host production configurations.
 
 ### Implemented
 
@@ -294,11 +315,9 @@ The generator writes sample images and paired `ground_truth` JSON files to `data
 - [x] Synthetic document generator and automated API smoke tests with OCR in CI.
 - [x] Automated static demo deployment through GitHub Pages.
 
-### Further Improvements
-
-- [ ] Expand OCR accuracy evaluation and regression coverage for varied document layouts.
-- [ ] Extend automated integration testing for optional registry services and edge cases.
-- [ ] Prepare production deployment guidance and operational hardening for the full-stack application.
+- [x] Layout-based OCR regression coverage and field accuracy reports.
+- [x] Deterministic registry tests with simulated providers.
+- [x] Single-host deployment guidance, proxy trust and health probes.
 
 ## License
 
