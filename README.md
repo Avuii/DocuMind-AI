@@ -8,10 +8,9 @@
   <strong>Turn invoices and receipts into structured, reviewable data.</strong>
 </p>
 
-
 <p align="center">
   <a href="https://avuii.github.io/DocuMind-AI/">
-    <img src="https://img.shields.io/badge/Live%20Demo-Open-1555F5?style=for-the-badge&logo=githubpages&logoColor=white" alt="Live Demo" />
+    <img src="https://img.shields.io/badge/Live%20Demo-Open-1555F5?style=for-the-badge&logo=githubpages&logoColor=white" alt="Open Live Demo" />
   </a>
   <a href="https://github.com/Avuii/DocuMind-AI/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Avuii/DocuMind-AI/ci.yml?style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status" />
@@ -19,134 +18,294 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License" />
   </a>
-  <br />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-149ECA?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/ASP.NET%20Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core" />
+  <img src="https://img.shields.io/badge/ASP.NET%20Core%208-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core 8" />
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
+<p align="center">
+  <a href="https://avuii.github.io/DocuMind-AI/"><strong>Live Demo</strong></a> ·
+  <a href="#getting-started"><strong>Getting Started</strong></a> ·
+  <a href="https://github.com/Avuii/DocuMind-AI/issues"><strong>Report an Issue</strong></a>
+</p>
 
 ---
 
-## Contents
+## Application Preview
 
-* [Live demo](#live-demo)   
-* [Interface preview](#interface-preview)   
-* [Features](#features) 
-* [Architecture](#architecture)  
-* [Run locally](#run-locally)  
-* [Testing and deployment](#testing-and-deployment)  
-* [Synthetic dataset](#synthetic-dataset)  
-* [Data and privacy](#data-and-privacy)  
+| Dashboard | Document Review |
+|:---:|:---:|
+| [![Dashboard showing upload and processing status](docs/demo-dashboard.png)](docs/demo-dashboard.png) | [![Document preview beside extracted fields](docs/demo-document.png)](docs/demo-document.png) |
 
-## Live demo
+## Table of Contents
 
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Configuration & API](#configuration--api)
+- [Testing & Security](#testing--security)
+- [Project Status & Roadmap](#project-status--roadmap)
+- [License](#license)
+- [Author](#author)
+
+## Overview
+
+**DocuMind AI** is a document intelligence application for processing invoices and receipts. It combines PDF text extraction and OCR with a human-in-the-loop review workflow, allowing users to check extracted values against the original document before exporting structured data.
+
+The full-stack application provides account management, document processing, PostgreSQL persistence, and integrations with business registries. An independent browser-based demo is available on GitHub Pages.
+
+### Try the Live Demo
 
 <p align="center">
-  <a href="https://avuii.github.io/DocuMind-AI/">
-    <strong>Open DocuMind AI on GitHub Pages →</strong>
-  </a>
+  <a href="https://avuii.github.io/DocuMind-AI/"><strong>Open DocuMind AI on GitHub Pages →</strong></a>
 </p>
 
+Open an example in **Documents**, or select **Process demo samples** on the dashboard. You can inspect extracted fields, correct values, ask questions with source quotes, organize records into colored groups, and export approved results as JSON or CSV.
 
-Open an example from **Documents**, or select **Process demo samples** on the dashboard to try the upload queue. Review fields alongside the original, ask a question with a source quote, assign a colored group, and export approved results to JSON or CSV.
+> [!NOTE]
+> The GitHub Pages demo runs without an account and stores changes in the browser. OCR and registry responses for its bundled synthetic samples are simulated. Other PDFs and images can be previewed and reviewed manually; real OCR, registry calls, and account management require the full application.
 
-The demo uses the same React screens as the full app. It starts without an account and keeps your edits and uploads in your browser. OCR and registry results are simulated for the included synthetic samples. Other PDFs and images can be previewed and filled in manually. Real OCR, registry queries, and account management are available when you run the full application. In **Settings**, choose English or Polish, set an export folder when supported, or reset the demo.
+The demo also supports English and Polish, browser-supported export-folder selection, and resetting local demo data in **Settings**.
 
-## Interface preview
+## Key Features
 
-| Dashboard | Document review |
-| --- | --- |
-| [![Dashboard with upload and processing status](docs/demo-dashboard.png)](docs/demo-dashboard.png) | [![Document preview alongside the review form](docs/demo-document.png)](docs/demo-document.png) |
+| Feature | Description |
+|---|---|
+| **Document Upload** | Import PDF, JPG, PNG, or ZIP files and monitor processing batches. |
+| **OCR & Extraction** | Read embedded PDF text or process scans and photos, extracting dates, counterparties, tax identifiers, totals, and supported line items. |
+| **Review & Approval** | Compare extracted fields with document previews, correct inaccurate values, and approve records for export. |
+| **Document Q&A** | Ask questions in Polish or English and inspect supporting source lines. |
+| **Counterparty Verification** | Compare identifiers against VAT White List, KRS, VIES, and optionally GUS REGON or CEIDG. |
+| **Organization** | Filter by status, apply tags, and manage named groups with custom colors. |
+| **Export** | Export individual records or approved batches to JSON and CSV. |
+| **Localization** | Switch between English and Polish in the interface. |
 
-## Features
+> [!TIP]
+> Review extracted totals, currencies, dates, and tax identifiers against the original before exporting. OCR quality depends on scan readability and document layout.
 
-- **Upload and track:** Add PDFs, JPGs, PNGs, or a ZIP. Follow the current batch, cancel pending processing, retry a document, or delete it from history.
-- **Extract:** Read embedded PDF text or run OCR on scans and photos. Detect invoice or receipt and document language, and extract dates, parties, tax identifiers, totals, and supported line items.
-- **Review:** Compare extracted fields with the original, correct missing or inaccurate values, and approve records for bulk export. Ask questions in Polish or English and see the source lines.
-- **Verify counterparties:** Compare identifiers with the VAT White List, KRS, VIES, GUS REGON, or CEIDG where configured. Choose which registry values to apply.
-- **Organize and export:** Use tags, named groups with custom colors, and status filters. Export individual or approved documents to JSON or CSV.
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React, TypeScript, Vite |
+| **Backend API** | C#, ASP.NET Core 8, ASP.NET Core Identity |
+| **Document Processing** | Python, FastAPI, PyMuPDF, PaddleOCR |
+| **Database** | PostgreSQL 16 |
+| **Browser Demo** | IndexedDB, browser storage |
+| **Infrastructure** | Docker, Docker Compose |
+| **CI/CD** | GitHub Actions, GitHub Pages |
+| **Test Data** | Python-based synthetic document generator |
 
 ## Architecture
 
+The full application separates the frontend, API, background processing, and persistence. The public demo runs the React interface using a browser adapter instead of backend services.
+
 ```mermaid
-flowchart LR
-    UI["React + TypeScript"] --> API["ASP.NET Core 8 API"]
-    API --> DB[("PostgreSQL · accounts, queue, results")]
-    API --> Files["Local file storage"]
-    Worker["Background worker"] --> DB
-    Worker --> Files
-    Worker --> OCR["FastAPI · PyMuPDF + PaddleOCR"]
+flowchart TB
+    subgraph Full[Full-Stack Application]
+        UI[React + TypeScript] --> API[ASP.NET Core 8 API]
+        API --> DB[(PostgreSQL)]
+        API --> Files[Local File Storage]
+        Worker[Background Worker] <--> DB
+        Worker --> Files
+        Worker --> OCR[FastAPI: PyMuPDF + PaddleOCR]
+        API --> Registries[Business Registries]
+    end
+
+    subgraph Demo[GitHub Pages Demo]
+        DemoUI[React Interface] --> Adapter[Browser Demo Adapter]
+        Adapter --> BrowserDB[(IndexedDB)]
+        Adapter --> Samples[Synthetic Samples]
+    end
 ```
 
-The Pages build replaces API calls with a browser adapter backed by IndexedDB. The regular build uses the API for authentication, persistence, and extraction.
+### Document Processing Flow
+
+```mermaid
+flowchart LR
+    Upload[Upload] --> Queue[Queued]
+    Queue --> Processing[Processing]
+    Processing --> Extract[OCR / Text Extraction]
+    Extract --> Review[Review & Correction]
+    Review --> Approval[Approval]
+    Approval --> Export[JSON / CSV Export]
+    Processing --> Failed[Failed]
+    Failed --> Retry[Retry]
+    Retry --> Queue
+```
+
+### Repository Structure
 
 | Location | Purpose |
-| --- | --- |
-| [frontend/](frontend/) | React UI, English and Polish translations, browser demo |
-| [backend/](backend/) | ASP.NET Core API, Identity, background worker and registry integrations |
-| [ml-service/](ml-service/) | PDF parsing, OCR and structured extraction |
-| [scripts/](scripts/) | Synthetic invoice and receipt generator |
-| [tests/](tests/) | API smoke tests |
-| [.github/workflows/](.github/workflows/) | CI and GitHub Pages deployment |
+|---|---|
+| [`frontend/`](frontend/) | React UI, translations, and browser-based demo |
+| [`backend/`](backend/) | ASP.NET Core API, authentication, background worker, and registry integrations |
+| [`ml-service/`](ml-service/) | OCR, PDF parsing, and structured extraction |
+| [`scripts/`](scripts/) | Synthetic invoice and receipt generator |
+| [`tests/`](tests/) | Document API smoke tests |
+| [`docs/`](docs/) | Interface screenshots and supporting documentation |
+| [`.github/workflows/`](.github/workflows/) | CI checks and GitHub Pages deployment |
+| [`docker-compose.yml`](docker-compose.yml) | Local PostgreSQL, API, and OCR services |
 
-## Run locally
+## Getting Started
 
-Requires Docker with Compose and Node.js 22.
+### Prerequisites
 
-```sh
+- **Docker** with Docker Compose
+- **Node.js 22** and npm
+- **Git**
+
+### Installation
+
+Clone the repository and start the local services:
+
+```bash
+git clone https://github.com/Avuii/DocuMind-AI.git
+cd DocuMind-AI
 docker compose up --build -d
+```
+
+Start the frontend in a separate terminal:
+
+```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-Open [localhost:4000](http://localhost:4000). The API is on port 5000 and [Swagger](http://localhost:5000/swagger) is available in development. The OCR service may take a few minutes on its first run while models download. Use `DOCUMIND_API_URL` in `frontend/.env.local` to point Vite at a different API.
+### Local Addresses
 
-Create a local account with at least 12 characters in the password, including uppercase and lowercase letters, a digit, and a special character. In Settings, generate and save a recovery code before you need to reset your password.
+| Service | Address |
+|---|---|
+| **Frontend** | [http://localhost:4000](http://localhost:4000) |
+| **Backend API** | [http://localhost:5000](http://localhost:5000) |
+| **Swagger (Development)** | [http://localhost:5000/swagger](http://localhost:5000/swagger) |
 
-The VAT White List, KRS, and VIES use public services. To enable GUS REGON or CEIDG, set `DOCUMIND_GUS_KEY` or `DOCUMIND_CEIDG_TOKEN` in a local `.env` file and recreate the backend container. Supply the CEIDG JWT without the `Bearer` prefix.
+The OCR service may need additional time on first startup while downloading its models.
 
-## Testing and deployment
+### First-Time Account Setup
 
-From the repository root, run the API smoke test with PowerShell 7 and Compose running:
+Create a local account using a password of at least **12 characters**, including uppercase and lowercase letters, a number, and a special character. Generate and save a recovery code in **Settings** for password recovery.
 
-```powershell
-./tests/document-api.ps1 -IncludeOcr
-```
+### Run the Browser Demo Locally
 
-Run the static demo locally without Compose:
+No Docker services or account are required for the demo:
 
-```sh
+```bash
 cd frontend
 npm ci
 npm run dev:demo
 ```
 
-`npm run build:demo` writes only the static site to `frontend/dist-demo/`. The [Pages workflow](.github/workflows/deploy-frontend-pages.yml) builds this directory and publishes it from `main`. The repository's **Settings → Pages → Source** must be set to **GitHub Actions**. CI also builds both frontend modes and rejects tracked files that match `.gitignore`.
+## Configuration & API
 
-## Synthetic dataset
+### Environment Variables
 
-```sh
+| Variable | Location | Purpose |
+|---|---|---|
+| `DOCUMIND_API_URL` | `frontend/.env.local` | Override the Vite proxy target for the backend; default is `http://127.0.0.1:5000`. |
+| `DOCUMIND_GUS_KEY` | Root `.env` | Enable GUS REGON queries. |
+| `DOCUMIND_CEIDG_TOKEN` | Root `.env` | Enable CEIDG queries using a JWT without the `Bearer` prefix. |
+
+VAT White List, KRS, and VIES use public services. After changing GUS or CEIDG environment values, recreate the backend container:
+
+```bash
+docker compose up -d --force-recreate backend
+```
+
+> [!IMPORTANT]
+> Do not commit real API keys, registry tokens, account credentials, or uploaded business documents. The Docker Compose configuration is intended for **local development**, not a production deployment.
+
+### API Reference
+
+The ASP.NET Core API supports account management, document uploads, processing status, extraction results, review actions, and export. The interactive API reference is available through [Swagger](http://localhost:5000/swagger) when the backend runs in Development mode.
+
+## Testing & Security
+
+### API Smoke Tests
+
+With Docker Compose running, execute the document API smoke tests from the repository root using **PowerShell 7**:
+
+```powershell
+./tests/document-api.ps1 -IncludeOcr
+```
+
+### Frontend Build Checks
+
+```bash
+cd frontend
+npm ci
+npm run build
+npm run build:demo
+```
+
+`npm run build:demo` generates the static demo in `frontend/dist-demo/`.
+
+### Continuous Integration & Deployment
+
+The [CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests. It builds both frontend modes, rejects tracked files that violate `.gitignore`, and exercises upload, extraction, and review through the Docker-based API smoke test with OCR.
+
+The [GitHub Pages workflow](.github/workflows/deploy-frontend-pages.yml) builds and publishes the static demo from `main`. The repository must use **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+### Synthetic Test Data
+
+Create synthetic invoices and receipts with Python:
+
+```bash
 python -m pip install -r scripts/requirements-generated.txt
 python scripts/generate_documents.py --language pl en de --invoices 8 --receipts 8 --degradation mixed
 ```
 
-The generator writes images and paired `ground_truth` JSON to `datasets/Generated`. The labels contain typed values, tax totals, line items, and text coordinates. Invoices have test stamps and KSeF-style QR codes pointing to a deliberately invalid domain. Use a different seed to generate another set.
+The generator writes sample images and paired `ground_truth` JSON files to `datasets/Generated`. Labels include typed field values, tax totals, line items, and text coordinates. Invoice samples contain test stamps and KSeF-style QR codes using an intentionally invalid domain.
 
-## Data and privacy
+### Data & Privacy
 
-The full app stores originals under `backend/storage/` and results in PostgreSQL. The public demo bundles only the explicitly included synthetic samples. Files you open in the demo stay in your browser. Local uploads, datasets, credentials, exports, and build output are excluded from Git; use the listed synthetic fixture paths for material meant to be public.
+| Environment | Storage and processing |
+|---|---|
+| **Full application** | Original files are stored in `backend/storage/`; account and extraction records are stored in PostgreSQL. |
+| **GitHub Pages demo** | Uses bundled synthetic samples and browser-local storage; it does not send documents to the full-stack API. |
+| **Repository** | Local uploads, datasets, credentials, exports, and build artifacts are excluded from Git. |
 
-Extraction quality depends on image readability and document layout. Review values before export, particularly when a scan is faint, fields are missing, or currencies conflict.
+> [!WARNING]
+> OCR output may contain incorrect or incomplete values. Verify extracted data before using it for accounting, reporting, or other consequential decisions.
 
+## Project Status & Roadmap
+
+**Current status: Active development.** The interactive demo is deployed; the full stack is configured for local execution.
+
+### Implemented
+
+- [x] React interface with English and Polish localization.
+- [x] Interactive GitHub Pages demo with synthetic samples and browser persistence.
+- [x] PDF, image, and ZIP upload with document queue and status tracking.
+- [x] PDF text extraction and PaddleOCR processing in the full application.
+- [x] Document review, inline corrections, approval, and source-linked Q&A.
+- [x] Business registry integrations with optional GUS REGON and CEIDG configuration.
+- [x] Tags, colored groups, filters, and JSON/CSV export.
+- [x] ASP.NET Core account management and password recovery workflow.
+- [x] PostgreSQL persistence and background document processing.
+- [x] Synthetic document generator and automated API smoke tests with OCR in CI.
+- [x] Automated static demo deployment through GitHub Pages.
+
+### Further Improvements
+
+- [ ] Expand OCR accuracy evaluation and regression coverage for varied document layouts.
+- [ ] Extend automated integration testing for optional registry services and edge cases.
+- [ ] Prepare production deployment guidance and operational hardening for the full-stack application.
 
 ## License
 
-[MIT](LICENSE) 
+This project is licensed under the [MIT License](LICENSE).
 
+---
 
 ## Author
-Created by [Avuii](https://github.com/Avuii).
+
+Created and maintained by **[Avuii](https://github.com/Avuii)**.
